@@ -22,6 +22,8 @@ namespace flame {
 		void resume();
 		//
 		void resume(php::value rv);
+		//
+		void resume(std::vector<php::value> rv);
 		void fail(const php::string& msg, int code = 0);
 		void fail(const boost::system::error_code& error);
 	private:

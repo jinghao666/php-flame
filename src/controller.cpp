@@ -21,7 +21,7 @@ namespace flame {
 			php::callable("cli_set_process_title").call({ title + " (flame/m)" });
 			int count = 1;
 			if(opts.exists("worker")) {
-				count = std::max(opts.get("worker").to_integer(), std::int64_t(1));
+				count = std::min(256, std::max((int)opts.get("worker").to_integer(), 1));
 			}
 			worker_.resize(count);
 			for(int i=0; i<worker_.size(); ++i) {

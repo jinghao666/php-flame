@@ -5,6 +5,7 @@ VENDOR_BOOST=/data/vendor/boost-1.67.0
 VENDOR_PHPEXT=/data/vendor/phpext-1.0.0
 VENDOR_PARSER=/data/vendor/parser-1.0.0
 VENDOR_AMQP=/data/vendor/amqp-3.1.0
+VENDOR_MYSQL=/data/vendor/mysql-connector-c-6.1.11
 
 # 编译目标
 # ---------------------------------------------------------------------------------
@@ -20,6 +21,7 @@ TARGETX=flame.so
 INCLUDES:= -I${VENDOR_PARSER}/include \
  -I${VENDOR_PHPEXT}/include \
  -isystem ${VENDOR_AMQP}/include \
+ -isystem ${VENDOR_MYSQL}/include \
  -isystem ${VENDOR_BOOST}/include \
  $(shell ${VENDOR_PHP}/bin/php-config --includes | sed 's/-I/-isystem/g')
 CXX=clang++
@@ -38,10 +40,12 @@ PCHEADER=./src/vendor.h
 # 连接选项
 # ---------------------------------------------------------------------------------
 # 依赖库
-LIBRARY+= -L${VENDOR_AMQP}/lib -lamqpcpp \
+LIBRARY+= -L${VENDOR_MYSQL}/lib -lmysqlclient \
+ -L${VENDOR_AMQP}/lib -lamqpcpp \
  -L${VENDOR_PHPEXT}/lib -lphpext \
  -L${VENDOR_BOOST}/lib -lboost_system -lboost_thread -lboost_filesystem \
- -lsasl2 -lssl -lcrypto -lrt
+ -lssl -lcrypto -lsasl2 -lrt
+
 LDFLAGS?=
 LDFLAGS+= -Wl,-rpath='$$ORIGIN/' ${LIBRARY}
 

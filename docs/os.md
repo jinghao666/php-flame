@@ -42,7 +42,7 @@ array(2) {
 }
 ```
 
-#### `flame\os\spawn(string $exec[, array $argv[, array $opts])`
+#### `flame\os\process flame\os\spawn(string $exec[, array $argv[, array $opts])`
 启动一个子进程，相关参数如下：
 * `$exec` - string - 可执行文件名或路径；
 * `$argv` - array | null - 参数；
@@ -77,8 +77,8 @@ flame\go(function() {
 * 当进程对象销毁时，实际进程将被强制结束 (SIGKILL)；
 * 被启动的进程将会“异步”运行 (可以选择进行 `wait()` 等待其执行完毕)；
 
-#### `yield flame\os\exec(string $exec[, array $argv[, array $opts])`
-启动进程，并返回该进程的输出文本数据 (与 `spawn()` 相较, 不能设置选项中 `stdout` 与 `stderr` 选项);
+#### `yield flame\os\exec(string $exec[, array $argv[, array $opts]) -> string`
+启动进程，并返回该进程的输出文本数据 (参数 选项与 `spawn()` 完全一致);
 
 **示例**：
 ``` PHP

@@ -7,6 +7,7 @@
 #include <ifaddrs.h>
 #include <netdb.h>
 
+#include <algorithm>
 #include <functional> // for std::functional
 #include <cctype>
 #include <utility>
@@ -32,3 +33,4 @@ namespace ssl = boost::asio::ssl;
 #include <boost/beast/websocket.hpp>
 #include <amqpcpp.h>
 #include <amqpcpp/libboostasio.h>
+#include <mysql.h>

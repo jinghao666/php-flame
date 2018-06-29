@@ -1,5 +1,5 @@
 <?php
-// ob_start();
+ob_start();
 
 flame\init("time_1");
 flame\go(function() {
@@ -28,7 +28,7 @@ flame\go(function() {
 });
 flame\run();
 
-// if(getenv("FLAME_PROCESS_WORKER")) {
-// 	$output = ob_get_flush();
-// 	assert($output == "done1.\ndone2.\ndone3.\n");
-// }
+if(getenv("FLAME_PROCESS_WORKER")) {
+	$output = ob_get_flush();
+	assert($output == "done1.\ndone2.\ndone3.\n");
+}

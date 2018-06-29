@@ -102,6 +102,10 @@ namespace flame {
 		rv_.push_back(rv);
 		resume();
 	}
+	void coroutine::resume(std::vector<php::value> rv) {
+		rv_.swap(rv);
+		resume();
+	}
 	void coroutine::fail(const php::string& msg, int code) {
 		rv_.clear();
 		if(st_.empty()) {

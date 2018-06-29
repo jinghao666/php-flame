@@ -5,6 +5,7 @@
 #include "http/http.h"
 #include "redis/redis.h"
 #include "rabbitmq/rabbitmq.h"
+#include "mysql/mysql.h"
 
 extern "C" {
 	ZEND_DLEXPORT zend_module_entry* get_module() {
@@ -26,6 +27,7 @@ extern "C" {
 		flame::http::declare(ext);
 		flame::redis::declare(ext);
 		flame::rabbitmq::declare(ext);
+		flame::mysql::declare(ext);
 		return ext;
 	}
 };
