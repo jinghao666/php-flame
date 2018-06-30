@@ -40,16 +40,13 @@ namespace http {
 		php::string str = params[0];
 		char *s = str.data(), *p, *e = s + str.size();
 		for(p = s; p < e; ++p) {
-			if(*p == ':') { // 分离 地址与端口
-				addr_.port( std::atoi(p + 1) );
-				break;
-			}
+			if(*p == ':') break; // 分离 地址与端口
 		}
-		if(addr_.port() == 0) {
-			throw php::exception(zend_ce_exception, "create http server failed: bad address");
-		}
+		if(*p != ':') throw php::exception(zend_ce_exception, "create http server failed: address port missing");
 		boost::asio::ip::address addr = boost::asio::ip::make_address(std::string(s, p-s));
 		addr_.address(addr);
+		addr_.port( std::atoi(p + 1) );
+
 		set("address", params[0]);
 		return nullptr;
 	}

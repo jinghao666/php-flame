@@ -27,6 +27,7 @@
 #include <boost/asio/ssl.hpp>
 #include <boost/asio/coroutine.hpp>
 using boost::asio::ip::tcp;
+using boost::asio::ip::udp;
 namespace ssl = boost::asio::ssl;
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>

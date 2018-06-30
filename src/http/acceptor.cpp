@@ -7,8 +7,9 @@ namespace flame {
 namespace http {
 	typedef boost::asio::detail::socket_option::boolean<SOL_SOCKET, SO_REUSEPORT> reuse_port;
 
-	acceptor::acceptor(server* svr)
-	: svr_(svr)
+	acceptor::acceptor(std::shared_ptr<flame::coroutine> co, server* svr)
+	: co_(co)
+	, svr_(svr)
 	, acceptor_(context)
 	, socket_(context) {
 		acceptor_.open(svr_->addr_.protocol());
@@ -20,7 +21,6 @@ namespace http {
 		acceptor_.listen();
 	}
 	void acceptor::accept(const boost::system::error_code& error) { BOOST_ASIO_CORO_REENTER(this) {
-		co_ = flame::coroutine::current;
 		do {
 			BOOST_ASIO_CORO_YIELD acceptor_.async_accept(socket_,
 				std::bind(&acceptor::accept, this->shared_from_this(), std::placeholders::_1));
