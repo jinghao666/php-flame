@@ -1,13 +1,13 @@
 #include "../coroutine.h"
 #include "acceptor.h"
 #include "server.h"
-#include "handler.h"
+#include "socket.h"
 
 namespace flame {
-namespace http {
+namespace tcp {
 	typedef boost::asio::detail::socket_option::boolean<SOL_SOCKET, SO_REUSEPORT> reuse_port;
 
-	acceptor::acceptor(server* svr)
+	acceptor::acceptor(std::shared_ptr<flame::coroutine> co, server* svr)
 	: co_(co)
 	, svr_(svr)
 	, acceptor_(context)

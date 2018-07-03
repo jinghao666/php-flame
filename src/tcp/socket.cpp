@@ -1,3 +1,4 @@
+#include "../dynamic_buffer.h"
 #include "../coroutine.h"
 #include "socket.h"
 
@@ -21,7 +22,7 @@ namespace tcp {
 	: socket_(context) {
 
 	}
-	php::value socket::read(php::parameters& param) {
+	php::value socket::read(php::parameters& params) {
 		std::shared_ptr<coroutine> co = coroutine::current;
 		php::object ref(this);
 		if(params.size() == 0) { // 随意读取一段数据
@@ -34,13 +35,13 @@ namespace tcp {
 					buffer_.commit(n);
 					php::string data(buffer_.data(), buffer_.size());
 					buffer_.consume(buffer_.size());
-					co_->resume(data);
+					co->resume(data);
 				}
 			});
 		}else if(params[0].typeof(php::TYPE::STRING)) { // 读取到指定的结束符
 			php::string delim = params[0];
-			boost::asio::async_read_util<tcp::socket, dynamic_buffer>(socket_, buffer_, boost::string_view(delim.c_str(), delim.size()),
-				[this, co, ref, delim] (const boost::system::error_code& error, std::size_t n) {
+			boost::asio::async_read_until<boost::asio::ip::tcp::socket, dynamic_buffer>(socket_, buffer_, delim.to_string(),
+				[this, co, ref] (const boost::system::error_code& error, std::size_t n) {
 
 				if(error == boost::asio::error::operation_aborted || error == boost::asio::error::eof) {
 					co->resume();
@@ -48,7 +49,7 @@ namespace tcp {
 					co->fail(error);
 				}else{
 					php::string data(buffer_.data(), n);
-					buffer_.consume(n)
+					buffer_.consume(n);
 					co->resume(data);
 				}
 			});
@@ -59,7 +60,7 @@ namespace tcp {
 				buffer_.consume(want);
 				return r;
 			}
-			boost::asio::async_read<tcp::socket, dynamic_buffer>(socket_, buffer_,
+			boost::asio::async_read<boost::asio::ip::tcp::socket, dynamic_buffer>(socket_, buffer_,
 				boost::asio::transfer_exactly(params[0].to_integer() - buffer_.size()), // 剩余的缓存数据也算在长度中
 				[this, co, ref] (const boost::system::error_code& error, std::size_t n) {
 
@@ -69,7 +70,7 @@ namespace tcp {
 					co->fail(error);
 				}else{
 					php::string data(buffer_.data(), buffer_.size());
-					buffer_.consume(buffer_.size())
+					buffer_.consume(buffer_.size());
 					co->resume(data);
 				}
 			});
@@ -80,26 +81,29 @@ namespace tcp {
 	php::value socket::write(php::parameters& params) {
 		php::string str = params[0];
 		str.to_string();
-		q_.push_back({coroutine::current, str});
-		if(q_.size() == 1) {
+		if(q_.empty()) {
+			q_.push_back({coroutine::current, str});
 			write_ex();
+		}else{
+			q_.push_back({coroutine::current, str});
 		}
 		return coroutine::async();
 	}
 	void socket::write_ex() {
 		php::object ref(this);
-		boost::asio::async_write(socket_, boost::asio::buffer(q_.front().c_str(), q_.front().size), [this, ref] (const boost::system::error_code& error, std::size_t n) {
+		boost::asio::async_write(socket_, boost::asio::buffer(q_.front().second.c_str(), q_.front().second.size()), [this, ref] (const boost::system::error_code& error, std::size_t n) {
 			std::shared_ptr<coroutine> co = q_.front().first;
 			q_.pop_front();
+			if(!q_.empty()) {
+				write_ex();
+			}
+			// 下面 resume 等使用可能再次触发 write 动作
 			if(error == boost::asio::error::operation_aborted) {
 				co->resume();
 			}else if(error) {
 				co->fail(error);
 			}else{
 				co->resume();
-			}
-			if(!q_.empty()) {
-				write_ex();
 			}
 		});
 	}
@@ -109,3 +113,4 @@ namespace tcp {
 	}
 }
 }
+  

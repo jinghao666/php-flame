@@ -12,13 +12,13 @@ namespace udp {
 				{"bind", php::TYPE::STRING, false, true},
 			})
 			.method<&socket::receive>("receive")
-			.method<&socket::receive>("receive_from", {
+			.method<&socket::receive_from>("receive_from", {
 				{"from", php::TYPE::STRING, true},
 			})
-			.method<&socket::write>("send", {
+			.method<&socket::send>("send", {
 				{"data", php::TYPE::STRING}
 			})
-			.method<&socket::write>("send_to", {
+			.method<&socket::send_to>("send_to", {
 				{"data", php::TYPE::STRING},
 				{"to", php::TYPE::STRING},
 			})
@@ -39,7 +39,9 @@ namespace udp {
 				if(*p == ':') break;
 			}
 			if(*p != ':') throw php::exception(zend_ce_exception, "udp socket __construct failed: address port missing");
-			udp::endpoint addr(boost::asio::ip::make_address(s, p - s), std::atoi(p+1));
+			boost::asio::ip::udp::endpoint addr(boost::asio::ip::make_address(std::string(s, p - s)), std::atoi(p+1));
+
+			socket_.open(addr.protocol());
 
 			boost::asio::socket_base::reuse_address opt1(true);
 			socket_.set_option(opt1);
@@ -56,20 +58,23 @@ namespace udp {
 		socket_.async_receive(boost::asio::buffer(buffer_.prepare(64 * 1024), 64 * 1024), [this, co, ref] (const boost::system::error_code& error, std::size_t n) {
 			if(error) return co->fail(error);
 			// buffer_.commit(n);
-			co->resume(php::string(buffer_.data(), n)); // 复制 (一般实际的接受量都很小, 避免重复申请 64K 内存)
+			// TODO 若接收到的数据较大, 改用 move 的方式?
+			co->resume(php::string(buffer_.data(), n)); // 复制 (非移动, 避免重复申请缓冲区 64K 内存)
 		});
 		return coroutine::async();
 	}
 	php::value socket::receive_from(php::parameters& params) {
 		php::string from = params[0];
-		php::object ref(this);
 		std::shared_ptr<coroutine> co = coroutine::current;
-		std::shared_ptr<udp::endpoint> edp = std::make_shared<udp::endpoint>();
-		socket_.async_receive(boost::asio::buffer(buffer_.prepare(64 * 1024), 64 * 1024), *edp, [this, co, edp, from, ref] (const boost::system::error_code& error, std::size_t n) {
+		std::shared_ptr<boost::asio::ip::udp::endpoint> edp = std::make_shared<boost::asio::ip::udp::endpoint>();
+		php::object ref(this);
+		socket_.async_receive_from(boost::asio::buffer(buffer_.prepare(64 * 1024), 64 * 1024), *edp, [this, co, edp, from, ref] (const boost::system::error_code& error, std::size_t n) {
 			if(error) return co->fail(error);
 			// buffer_.commit(n);
-			from = (boost::format("%s:%d") % edp.address().to_string() % edp.port()).str();
-			co->resume(php::string(buffer_.data(), n)); // 复制 (一般实际的接受量都很小, 避免重复申请 64K 内存)
+			php::string f = from;
+			f = (boost::format("%s:%d") % edp->address().to_string() % edp->port()).str();
+			// TODO 若接收到的数据较大, 改用 move 的方式?
+			co->resume(php::string(buffer_.data(), n)); // 复制 (非移动, 避免重复申请缓冲区 64K 内存)
 		});
 		return coroutine::async();
 	}
@@ -84,14 +89,14 @@ namespace udp {
 		return coroutine::async();
 	}
 	php::value socket::send_to(php::parameters& params) {
-		php::string str = params[0];
+		php::string str = params[1];
 		char *s = str.data(), *p, *e = s + str.size();
 		for(p = s; p < e; ++p) {
 			// 分离 地址与端口
 			if(*p == ':') break;
 		}
 		if(*p != ':') throw php::exception(zend_ce_exception, "udp socket send failed: address port missing");
-		udp::endpoint addr(boost::asio::ip::make_address(s, p - s), std::atoi(p+1));
+		boost::asio::ip::udp::endpoint addr(boost::asio::ip::make_address(std::string(s, p - s)), std::atoi(p+1));
 
 		php::string data = params[0];
 		php::object ref(this);

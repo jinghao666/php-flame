@@ -5,6 +5,7 @@
 #include "_connection_pool.h"
 #include "transaction.h"
 #include "client.h"
+#include "result.h"
 
 namespace flame {
 namespace mysql {
@@ -18,20 +19,17 @@ namespace mysql {
 			.function<connect>("flame\\mysql\\connect");
 		transaction::declare(ext);
 		client::declare(ext);
+		result::declare(ext);
 	}
-	std::shared_ptr<_connection_pool> ptr;
 	php::value connect(php::parameters& params) {
-		std::shared_ptr<php::url> url = php::parse_url(params[0]);
 		php::object cli(php::class_entry<client>::entry());
 		client* cli_ = static_cast<client*>(php::native(cli));
 
-		cli_->c_.reset(new _connection_pool(url));
-		std::clog << "main: " << std::this_thread::get_id() << std::endl;
+		cli_->c_.reset(new _connection_pool(php::parse_url(params[0])));
 		std::shared_ptr<coroutine> co = coroutine::current;
-		cli_->c_->exec(coroutine::current, [co, cli] (std::shared_ptr<coroutine> co, std::shared_ptr<MYSQL> c) {
-			MYSQL* conn = c.get();
-			std::clog << "help: " << std::this_thread::get_id() << std::endl;
-			std::clog << "mysql connection: " << conn << " " << mysql_ping(conn) << std::endl;
+		cli_->c_->exec([] (std::shared_ptr<MYSQL> c) -> MYSQL_RES* {
+			return nullptr;
+		}, [co, cli] (std::shared_ptr<MYSQL> c, MYSQL_RES* rs) {
 			co->resume(cli);
 		});
 		return coroutine::async();

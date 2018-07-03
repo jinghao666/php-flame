@@ -35,3 +35,4 @@ namespace ssl = boost::asio::ssl;
 #include <amqpcpp.h>
 #include <amqpcpp/libboostasio.h>
 #include <mysql.h>
+#include <my_sys.h>

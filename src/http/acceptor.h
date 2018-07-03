@@ -12,6 +12,8 @@ namespace http {
 		server*       svr_;
 		tcp::acceptor acceptor_;
 		tcp::socket   socket_;
+
+		friend class server;
 	};
 }
 }

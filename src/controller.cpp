@@ -103,12 +103,14 @@ namespace flame {
 		}
 	}
 	void controller::worker_run() {
-		boost::asio::executor_work_guard<boost::asio::io_context::executor_type> idle(context_ex.get_executor());
+		boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work(context_ex.get_executor());
 		// 辅助工作线程
-		std::thread ex_thread([this] () {
-			context_ex.run();
-			::sleep(1);
-		});
+		std::thread workers[4];
+		for(int i=0;i<4;++i) {
+			workers[i] = std::thread([this] {
+				context_ex.run();
+			});
+		}
 		std::exception_ptr ex;
 		// 工作进程负责执行
 		try{
@@ -119,8 +121,13 @@ namespace flame {
 		for(auto fn: stop_) {
 			fn(ex);
 		}
-		context_ex.stop();
-		ex_thread.join();
+		work.reset();
+		// context_ex.stop();
+		for(int i=0;i<4;++i) {
+			if(workers[i].joinable()) {
+				workers[i].join();
+			}
+		}
 		if(ex) exit(-1); // !!! 发生异常退出, 防止 PHP 引擎将还存活的对象内存提前释放
 	}
 }

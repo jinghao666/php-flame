@@ -19,6 +19,8 @@ namespace rabbitmq {
 		message::declare(ext);
 	}
 	php::value connect(php::parameters& params) {
+		// TODO 连接超时处理?
+
 		php::object cli(php::class_entry<client>::entry());
 		client* cli_ = static_cast<client*>(php::native(cli));
 		
@@ -28,7 +30,6 @@ namespace rabbitmq {
 			cli_->amqp_.handler.get(), AMQP::Address(addr.c_str(), addr.size())
 		));
 		cli_->amqp_.channel.reset(new AMQP::TcpChannel(cli_->amqp_.connection.get()));
-		std::shared_ptr<coroutine> co = coroutine::current;
 		std::uint16_t prefetch = 1024;
 		if(params.size() > 1) {
 			php::array opts = params[1];
@@ -37,11 +38,19 @@ namespace rabbitmq {
 			}
 		}
 		cli_->amqp_.channel->setQos(prefetch);
-		cli_->amqp_.channel->onReady([co, cli] () mutable {
-			co->resume(std::move(cli)); // 需要 move 否则 cli 引用会保留在此回调中
+		std::shared_ptr<coroutine> co = coroutine::current;
+		cli_->amqp_.channel->onReady([co, cli, cli_] () mutable {
+			co->resume(std::move(cli));
+			co.reset();
+			cli_->amqp_.channel->onError(nullptr);
+			// cli_->amqp_.channel->onReady(nullptr); // 无法清理当前函数
 		});
-		cli_->amqp_.channel->onError([co] (const char* message) {
+		cli_->amqp_.channel->onError([co, cli, cli_] (const char* message) mutable {
 			co->fail(message);
+			co.reset();
+			// cli_->amqp_.channel->onError(nullptr);  // 无法清理当前函数
+			cli_->amqp_.channel->onReady(nullptr);
+			cli = nullptr;
 		});
 		return coroutine::async();
 		// return cli;

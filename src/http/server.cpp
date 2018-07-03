@@ -33,7 +33,8 @@ namespace http {
 				{"path", php::TYPE::STRING},
 				{"callback", php::TYPE::CALLABLE},
 			})
-			.method<&server::run>("run");
+			.method<&server::run>("run")
+			.method<&server::close>("close");
 		ext.add(std::move(class_server));
 	}
 	php::value server::__construct(php::parameters& params) {
@@ -75,8 +76,13 @@ namespace http {
 		return this;
 	}
 	php::value server::run(php::parameters& params) {
-		std::make_shared<acceptor>(this)->accept();
+		acc_ = std::make_shared<acceptor>(coroutine::current, this);
+		acc_->accept();
 		return coroutine::async();
+	}
+	php::value server::close(php::parameters& params) {
+		acc_->acceptor_.close();
+		return nullptr;
 	}
 }
 }

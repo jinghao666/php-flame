@@ -2,6 +2,8 @@
 #include "os/os.h"
 #include "time/time.h"
 #include "log/log.h"
+#include "udp/udp.h"
+#include "tcp/tcp.h"
 #include "http/http.h"
 #include "redis/redis.h"
 #include "rabbitmq/rabbitmq.h"
@@ -18,12 +20,15 @@ extern "C" {
 		ext
 			.desc({"vendor/boost", BOOST_LIB_VERSION})
 			.desc({"vendor/libphpext", PHPEXT_LIB_VERSION})
-			.desc({"vendor/amqp-cpp", "3.1.0"});
+			.desc({"vendor/amqp-cpp", "3.1.0"})
+			.desc({"vendor/mysql", PACKAGE_VERSION});
 
 		flame::declare(ext);
 		flame::os::declare(ext);
 		flame::time::declare(ext);
 		flame::log::declare(ext);
+		flame::udp::declare(ext);
+		flame::tcp::declare(ext);
 		flame::http::declare(ext);
 		flame::redis::declare(ext);
 		flame::rabbitmq::declare(ext);

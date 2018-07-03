@@ -7,7 +7,7 @@ namespace time {
 		static void declare(php::extension_entry& ext);
 		timer();
 		php::value __construct(php::parameters& params);
-		php::value run(php::parameters& params);
+		php::value start(php::parameters& params);
 		php::value close(php::parameters& params);
 	private:
 		boost::asio::steady_timer  tm_;

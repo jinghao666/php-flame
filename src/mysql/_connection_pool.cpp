@@ -8,7 +8,8 @@ namespace mysql {
 	_connection_pool::_connection_pool(std::shared_ptr<php::url> url, std::size_t max)
 	: url_(url)
 	, max_(max)
-	, size_(0) {
+	, size_(0)
+	, wait_guard(controller_->context_ex) {
 
 	}
 	_connection_pool::~_connection_pool() {
@@ -18,13 +19,20 @@ namespace mysql {
 		}
 	}
 	// 以下函数应在主线程调用
-	_connection_pool& _connection_pool::exec(std::shared_ptr<coroutine> co, std::function<void (std::shared_ptr<coroutine> co, std::shared_ptr<MYSQL> c)> wk) {
+	_connection_pool& _connection_pool::exec(std::function<MYSQL_RES* (std::shared_ptr<MYSQL> c)> wk,
+			std::function<void (std::shared_ptr<MYSQL> c, MYSQL_RES* r)> fn) {
 		auto ptr = this->shared_from_this();
-		boost::asio::post(controller_->context_ex,
-			// 获取一个连接后执行实际的工作(连接获取工作须在工作线程进行)
-			std::bind(&_connection_pool::acquire, ptr, [co, wk, ptr] (std::shared_ptr<MYSQL> c) {
-				wk(co, c);
-			}));
+		// 受保护的连接获取过程
+		boost::asio::post(wait_guard, std::bind(&_connection_pool::acquire, this, [wk, fn, ptr] (std::shared_ptr<MYSQL> c) {
+			// 不受保护的工作过程
+			boost::asio::post(controller_->context_ex, [wk, fn, c, ptr] () {
+				MYSQL_RES* r = wk(c);
+				boost::asio::post(context, [fn, c, r, ptr] () {
+					// 主线程后续流程
+					fn(c, r);
+				});
+			});
+		}));
 		return *this;
 	}
 	// 以下函数应在工作线程调用
@@ -44,6 +52,9 @@ namespace mysql {
 		if(!mysql_real_connect(c, url_->host, url_->user, url_->pass, url_->path + 1, url_->port, nullptr, 0)) {
 			throw std::runtime_error("cannot connect to mysql server");
 		}
+		// 提供给 escape 使用(主线程)
+		i_ = c->charset;
+		s_ = c->server_status;
 		++size_; // 当前还存在的连接数量
 		release(c);
 	}
@@ -53,7 +64,10 @@ namespace mysql {
 		}else{ // 立刻分配使用
 			std::function<void (std::shared_ptr<MYSQL> c)> cb = wait_.front();
 			wait_.pop_front();
-			std::shared_ptr<MYSQL> p(c, std::bind(&_connection_pool::release, this->shared_from_this(), std::placeholders::_1));
+			auto ptr = this->shared_from_this();
+			std::shared_ptr<MYSQL> p(c, [this, ptr] (MYSQL* c) {
+				boost::asio::post(wait_guard, std::bind(&_connection_pool::release, ptr, c));
+			});
 			cb(p);
 		}
 	}

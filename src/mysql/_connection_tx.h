@@ -7,7 +7,8 @@ namespace mysql {
 		// 以下函数应在工作线程调用
 		_connection_tx(std::shared_ptr<MYSQL> c);
 		// 以下函数应在主线程调用
-		_connection_tx& exec(std::shared_ptr<coroutine> co, std::function<void (std::shared_ptr<coroutine> co, std::shared_ptr<MYSQL> c)> wk);
+		virtual _connection_tx& exec(std::function<MYSQL_RES* (std::shared_ptr<MYSQL> c)> wk,
+			std::function<void (std::shared_ptr<MYSQL> c, MYSQL_RES* r)> fn) override;
 	private:
 		std::shared_ptr<MYSQL> c_;
 	};

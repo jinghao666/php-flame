@@ -7,16 +7,18 @@ namespace udp {
 	public:
 		static void declare(php::extension_entry& ext);
 		socket();
-		php::value receive(php::parameters& param);
+		php::value __construct(php::parameters& params);
+		php::value receive(php::parameters& params);
 		php::value receive_from(php::parameters& params);
 		php::value send(php::parameters& params);
 		php::value send_to(php::parameters& params);
 		php::value close(php::parameters& params);
 		void write_ex();
 	private:
-		udp::socket socket_;
+		boost::asio::ip::udp::socket socket_;
 		php::buffer buffer_;
-		std::list< std::pair<std::shared_ptr<coroutine>, php::string> > q_;
+
+		friend php::value connect(php::parameters& params);
 	};
 }
 }

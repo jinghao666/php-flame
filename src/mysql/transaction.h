@@ -11,10 +11,11 @@ namespace mysql {
 		}
 		php::value commit(php::parameters& params);
 		php::value rollback(php::parameters& params);
+
+		php::value escape(php::parameters& params);
 		php::value query(php::parameters& params);
 	protected:
 		std::shared_ptr<_connection_base> c_;
-
 		friend class client;
 	};
 }

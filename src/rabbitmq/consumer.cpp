@@ -11,7 +11,9 @@ namespace rabbitmq {
 			.property({"queue", ""})
 			.property({"tag", ""})
 			.method<&consumer::__construct>("__construct", {}, php::PRIVATE)
-			.method<&consumer::run>("run")
+			.method<&consumer::run>("run", {
+				{"callable", php::TYPE::CALLABLE},
+			})
 			.method<&consumer::confirm>("confirm", {
 				{"message", "flame\\rabbitmq\\message"}
 			})
@@ -26,16 +28,17 @@ namespace rabbitmq {
 		return nullptr;
 	}
 	php::value consumer::run(php::parameters& params) {
+		cb_ = params[0];
 		co_parent = coroutine::current;
-		co_parent->stack(nullptr, php::value(this));
+		// co_parent->stack(nullptr, php::value(this));
 		std::string queue = get("queue");
 		amqp_.channel->consume(queue, flag_)
-			// onReceived 等回调不能补货 php::value(this) 否则会导致该引用被长时间持有
+			// onReceived 等回调不能捕获 php::value(this) 否则会导致该引用被长时间持有
 			.onReceived([this] (const AMQP::Message &m, std::uint64_t tag, bool redelivered) {
 				php::object msg(php::class_entry<message>::entry());
 				message* msg_ = static_cast<message*>(php::native(msg));
 				msg_->build_ex(m, tag);
-				co_worker->start(cb_, {php::value(this), msg});
+				co_worker->start(cb_, {msg});
 			}).onSuccess([this] (const std::string& tag) {
 				co_worker.reset(new coroutine());
 				set("tag", tag);
@@ -61,10 +64,13 @@ namespace rabbitmq {
 		if(tag.size() > 0) {
 			std::shared_ptr<coroutine> co = coroutine::current;
 			co->stack(nullptr, php::value(this)); // 保存当前对象引用
-			amqp_.channel->cancel(tag).onSuccess([this, co] (const std::string& tag) {
-				co_worker.reset();
+			amqp_.channel->cancel(tag).onSuccess([this, co] (const std::string& tag) mutable {
 				co_parent->resume();
 				co->resume();
+				co.reset();
+				co_parent.reset();
+				cb_ = nullptr;
+				co_worker.reset();
 			});
 			return coroutine::async();
 		}else{

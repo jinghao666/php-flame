@@ -64,16 +64,16 @@ namespace time {
 	php::value tick(php::parameters& params) {
 		php::value interval = params[0], cb = params[1];
 		std::make_shared<coroutine>()->start(php::value([interval, cb] (php::parameters& params) -> php::value {
-			php::object timer(php::class_entry<timer>::entry(), {interval, cb});
-			return timer.call("run");
+			php::object timer(php::class_entry<timer>::entry(), {interval});
+			return timer.call("start", {cb});
 		}));
 		return nullptr;
 	}
 	php::value after(php::parameters& params) {
 		php::value interval = params[0], cb = params[1];
 		std::make_shared<coroutine>()->start(php::value([interval, cb] (php::parameters& params) -> php::value {
-			php::object timer(php::class_entry<timer>::entry(), {interval, cb});
-			return timer.call("run", {true});
+			php::object timer(php::class_entry<timer>::entry(), {interval});
+			return timer.call("start", {cb, true});
 		}));
 		return nullptr;
 	}

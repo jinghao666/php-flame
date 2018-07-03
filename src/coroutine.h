@@ -11,7 +11,7 @@ namespace flame {
 		static php::value async();
 		static php::value exception(const php::string& msg, int code = 0);
 		coroutine();
-		// virtual ~coroutine();
+		~coroutine();
 		// 
 		std::shared_ptr<coroutine> stack(const php::callable& fn, const php::object& ref);
 		std::shared_ptr<coroutine> stack(const php::callable& fn);
@@ -32,6 +32,7 @@ namespace flame {
 		// 运行结果或启动参数
 		std::vector<php::value> rv_;
 		int status_;
+		boost::asio::executor_work_guard<boost::asio::io_context::executor_type> wk_;
 		
 		// 协程运行过程
 		void start_ex();

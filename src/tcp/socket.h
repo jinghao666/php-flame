@@ -12,9 +12,12 @@ namespace tcp {
 		php::value close(php::parameters& params);
 		void write_ex();
 	private:
-		tcp::socket socket_;
+		boost::asio::ip::tcp::socket socket_;
 		php::buffer buffer_;
 		std::list< std::pair<std::shared_ptr<coroutine>, php::string> > q_;
+
+		friend class acceptor;
+		friend php::value connect(php::parameters& params);
 	};
 }
 }

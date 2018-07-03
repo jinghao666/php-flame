@@ -26,12 +26,17 @@ namespace flame {
 	};
 	//
 	coroutine::coroutine()
-	: status_(0) {
-
-	}
-	// coroutine::~coroutine() {
+	: status_(0)
+	, wk_(context.get_executor()) {
 		
-	// }
+	}
+	coroutine::~coroutine() {
+		wk_.reset();
+		// rv_.clear();
+		// while(!st_.empty()) {
+		// 	st_.pop();
+		// }
+	}
 	std::shared_ptr<coroutine> coroutine::stack(const php::callable& fn, const php::object& rf) {
 		st_.push(std::make_pair(fn, rf));
 		return shared_from_this();
@@ -165,16 +170,16 @@ namespace flame {
 	void coroutine::tune_ex(php::object& g, php::exception& ex) {
 		zval* exception = ex, rv;
 		zend_generator* generator = reinterpret_cast<zend_generator*>(static_cast<zend_object*>(g));
-        zend_execute_data *original_execute_data = EG(current_execute_data);
+		zend_execute_data *original_execute_data = EG(current_execute_data);
 		EG(current_execute_data) = generator->execute_data;
 		generator->execute_data->opline--;
 		
-        ZVAL_STR(&rv, zend_get_executed_filename_ex());
+		ZVAL_STR(&rv, zend_get_executed_filename_ex());
 		zend_update_property(
 			zend_get_exception_base(exception), exception, "file", sizeof("file")-1, &rv);
 		
-        ZVAL_LONG(&rv, zend_get_executed_lineno());
-        zend_update_property(
+		ZVAL_LONG(&rv, zend_get_executed_lineno());
+		zend_update_property(
 			zend_get_exception_base(exception), exception, "line", sizeof("line")-1, &rv);
 
 		generator->execute_data->opline++;

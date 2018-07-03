@@ -1,7 +1,7 @@
 #pragma once
 
 namespace flame {
-namespace http {
+namespace tcp {
 	class server;
 	class acceptor: public boost::asio::coroutine, public std::enable_shared_from_this<acceptor> {
 	public:
@@ -10,8 +10,10 @@ namespace http {
 	private:
 		std::shared_ptr<flame::coroutine> co_;
 		server*       svr_;
-		tcp::acceptor acceptor_;
-		tcp::socket   socket_;
+		boost::asio::ip::tcp::acceptor acceptor_;
+		boost::asio::ip::tcp::socket   socket_;
+
+		friend class server;
 	};
 }
 }

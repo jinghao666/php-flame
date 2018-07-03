@@ -44,7 +44,7 @@ LIBRARY+= -L${VENDOR_MYSQL}/lib -lmysqlclient \
  -L${VENDOR_AMQP}/lib -lamqpcpp \
  -L${VENDOR_PHPEXT}/lib -lphpext \
  -L${VENDOR_BOOST}/lib -lboost_system -lboost_thread -lboost_filesystem \
- -lssl -lcrypto -lsasl2 -lrt
+ -lssl -lcrypto -lsasl2 -lpthread -lrt
 
 LDFLAGS?=
 LDFLAGS+= -Wl,-rpath='$$ORIGIN/' ${LIBRARY}

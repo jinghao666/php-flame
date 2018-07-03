@@ -19,7 +19,6 @@ namespace rabbitmq {
 		return nullptr;
 	}
 	php::value producer::publish(php::parameters& params) {
-		std::shared_ptr<coroutine> co = coroutine::current;
 		std::string routing_key;
 		if(params.size() > 1) {
 			routing_key = params[1].to_string();

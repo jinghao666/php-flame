@@ -10,9 +10,9 @@ namespace time {
 			.property({"stopped",  false})
 			.method<&timer::__construct>("__construct", {
 				{"interval", php::TYPE::INTEGER},
-				{"handler", php::TYPE::CALLABLE},
 			})
-			.method<&timer::run>("run", {
+			.method<&timer::start>("start", {
+				{"handler", php::TYPE::CALLABLE},
 				{"once", php::TYPE::BOOLEAN, false, true}
 			})
 			.method<&timer::close>("close");
@@ -30,17 +30,18 @@ namespace time {
 			throw php::exception(zend_ce_error, "timer interval must be >= 0 milliseconds");
 		}
 		set("interval", d);
-		cb_ = params[1];
+		
 		return nullptr;
 	}
-	php::value timer::run(php::parameters& params) {
-		co_ = coroutine::current;
-		if(params.size() > 0) {
-			start_ex(params[0]);
+	php::value timer::start(php::parameters& params) {
+		co_ = std::make_shared<coroutine>();
+		cb_ = params[0];
+		if(params.size() > 1) {
+			start_ex(params[1]);
 		}else{
 			start_ex();
 		}
-		return coroutine::async();
+		return php::value(this);
 	}
 	void timer::start_ex(bool once) {
 		std::int64_t duration = get("interval");
@@ -50,16 +51,17 @@ namespace time {
 		tm_.async_wait([this, ref] (const boost::system::error_code& error) {
 			if(!error) {
 				// 启动协程执行回调
-				std::make_shared<coroutine>()
-					/* 包裹下层回调 */ ->stack(php::callable([this] (php::parameters& params) -> php::value {
-						if(!get("stopped")) { // 用户未停止则继续 TICK
-							start_ex();
-						}else{
-							co_->resume();
-						}
-						return nullptr;
-					}), ref)
-					/* 启动协程, 回调 */->start(cb_, {ref});
+				co_
+				/* 包裹下层回调 */ ->stack(php::callable([this] (php::parameters& params) -> php::value {
+					if(!get("stopped")) { // 用户未停止则继续 TICK
+						start_ex();
+					}else{
+						co_.reset();
+						cb_ = nullptr;
+					}
+					return nullptr;
+				}), ref)
+				/* 启动协程, 回调 */->start(cb_, {ref});
 			}
 		});
 	}

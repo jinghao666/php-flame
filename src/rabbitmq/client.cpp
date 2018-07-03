@@ -12,7 +12,6 @@ namespace rabbitmq {
 			.method<&client::__construct>("__construct", {}, php::PRIVATE)
 			.method<&client::consume>("consume", {
 				{"queue", php::TYPE::STRING},
-				{"callback", php::TYPE::CALLABLE},
 				{"options", php::TYPE::ARRAY, false, true},
 			})
 			.method<&client::produce>("produce", {
@@ -29,10 +28,9 @@ namespace rabbitmq {
 		php::object c(php::class_entry<consumer>::entry());
 		c.set("queue", params[0]);
 		consumer* p_ = static_cast<consumer*>(php::native(c));
-		p_->cb_ = params[1];
 		p_->flag_ = 0;
-		if(params.size() > 2) {
-			php::array opts_ = params[2];
+		if(params.size() > 1) {
+			php::array opts_ = params[1];
 			if(opts_.get("nolocal").to_boolean())   p_->flag_ |= AMQP::nolocal;
 			if(opts_.get("noack").to_boolean())     p_->flag_ |= AMQP::noack;
 			if(opts_.get("exclusive").to_boolean()) p_->flag_ |= AMQP::exclusive;
