@@ -14,6 +14,7 @@ namespace mysql {
 
 		php::value escape(php::parameters& params);
 		php::value query(php::parameters& params);
+		// TODO 提供类似 medoo 的辅助简化接口
 	protected:
 		std::shared_ptr<_connection_base> c_;
 		friend class client;

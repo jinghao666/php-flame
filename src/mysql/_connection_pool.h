@@ -9,10 +9,12 @@ namespace mysql {
 		~_connection_pool();
 		virtual _connection_pool& exec(std::function<MYSQL_RES* (std::shared_ptr<MYSQL> c)> wk,
 			std::function<void (std::shared_ptr<MYSQL> c, MYSQL_RES* r)> fn) override;
+		
+	private:
 		// 以下函数应在工作线程调用
 		void acquire(std::function<void (std::shared_ptr<MYSQL> c)> cb);
 		void release(MYSQL* c);
-	private:
+		
 		std::shared_ptr<php::url> url_;
 		std::uint16_t      max_;
 		std::list<MYSQL*> conn_;

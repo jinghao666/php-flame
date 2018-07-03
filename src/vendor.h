@@ -1,5 +1,5 @@
 #define EXTENSION_NAME    "flame"
-#define EXTENSION_VERSION "1.0"
+#define EXTENSION_VERSION "0.5.0"
 
 #include <cstdio>
 #include <sys/types.h>
@@ -36,3 +36,4 @@ namespace ssl = boost::asio::ssl;
 #include <amqpcpp/libboostasio.h>
 #include <mysql.h>
 #include <my_sys.h>
+#include <mongoc.h>

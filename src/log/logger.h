@@ -24,6 +24,8 @@ namespace log {
 		std::unique_ptr<boost::interprocess::message_queue> queue_;
 		std::thread                                         write_;
 		std::unique_ptr<boost::asio::signal_set>           signal_;
+		std::list<php::object>                             master_;
+
 
 		void write_ex(std::ostream& os, php::parameters& params);
 		void on_sigusr2(const boost::system::error_code& error, int sig);

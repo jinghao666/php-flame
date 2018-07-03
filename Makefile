@@ -6,6 +6,7 @@ VENDOR_PHPEXT=/data/vendor/phpext-1.0.0
 VENDOR_PARSER=/data/vendor/parser-1.0.0
 VENDOR_AMQP=/data/vendor/amqp-3.1.0
 VENDOR_MYSQL=/data/vendor/mysql-connector-c-6.1.11
+VENDOR_MONGODB=/data/vendor/mongoc-1.11.0
 
 # 编译目标
 # ---------------------------------------------------------------------------------
@@ -21,6 +22,7 @@ TARGETX=flame.so
 INCLUDES:= -I${VENDOR_PARSER}/include \
  -I${VENDOR_PHPEXT}/include \
  -isystem ${VENDOR_AMQP}/include \
+ -isystem ${VENDOR_MONGODB}/include/libmongoc-1.0 -isystem ${VENDOR_MONGODB}/include/libbson-1.0 \
  -isystem ${VENDOR_MYSQL}/include \
  -isystem ${VENDOR_BOOST}/include \
  $(shell ${VENDOR_PHP}/bin/php-config --includes | sed 's/-I/-isystem/g')
@@ -42,6 +44,7 @@ PCHEADER=./src/vendor.h
 # 依赖库
 LIBRARY+= -L${VENDOR_MYSQL}/lib -lmysqlclient \
  -L${VENDOR_AMQP}/lib -lamqpcpp \
+ -L${VENDOR_MONGODB}/lib -lmongoc-static-1.0 -lbson-static-1.0 \
  -L${VENDOR_PHPEXT}/lib -lphpext \
  -L${VENDOR_BOOST}/lib -lboost_system -lboost_thread -lboost_filesystem \
  -lssl -lcrypto -lsasl2 -lpthread -lrt

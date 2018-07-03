@@ -6,7 +6,7 @@
 namespace flame {
 namespace log {
 	php::value logger_ref;
-	logger*    logger_;
+	logger*    logger_ = nullptr;
 
 	static void write_before_exit(const std::exception& ex) {
 		boost::format fmt("(FAIL) Uncaught C++ Exception: %s");

@@ -2,6 +2,7 @@
 #include "../coroutine.h"
 #include "../time/time.h"
 #include "logger.h"
+#include "log.h"
 
 namespace flame {
 namespace log {
@@ -28,6 +29,7 @@ namespace log {
 		ext.add(std::move(class_logger));
 	}
 	logger::~logger() {
+		// 主进程的 logger 退出需要通知日志线程退出
 		if(controller_->type == controller::MASTER) {
 			queue_->send("c", 1, 0);
 			write_.join();
@@ -39,14 +41,13 @@ namespace log {
 		}
 		php::md5(reinterpret_cast<const unsigned char*>(fpath_.c_str()), fpath_.size(), qname_);
 		if(controller_->type == controller::MASTER) {
-			boost::interprocess::message_queue::remove(qname_);
 			queue_.reset(new boost::interprocess::message_queue(
-				boost::interprocess::create_only, qname_, 256, 8192
+				boost::interprocess::open_or_create, qname_, 256, 16 * 1024
 			));
 			write_ = std::thread([this] () {
 ROTATING:
 				static std::shared_ptr<std::ostream> file;
-				static char     data[8192];
+				static char     data[16 * 1024];
 				static size_t   size;
 				static unsigned sort;
 				
@@ -56,8 +57,11 @@ ROTATING:
 					file.reset(&std::clog, boost::null_deleter());
 				}
 				while(true) {
-					queue_->receive(&data, 8192, size, sort);
+					queue_->receive(&data, 16 * 1024, size, sort);
 					switch(data[0]) {
+					case 'n': // 在子进程建立新的 logger 需要周知主进程创建对应的对象
+						master_.emplace_back(php::object(php::class_entry<logger>::entry(), {php::string(data + 1, size -1)}));
+						break;
 					case 'c':
 						goto CLOSING; // 退出停止机制
 					case 'r':
@@ -66,7 +70,6 @@ ROTATING:
 						file->put('[');
 						file->write(time::datetime(), 19);
 						file->put(']');
-						file->put(' ');
 						file->write(data, size);
 						file->put('\n');
 						file->flush();
@@ -76,7 +79,6 @@ CLOSING:
 				boost::interprocess::message_queue::remove(qname_);
 			});
 		}else{
-			// open_or_create 方便调试
 			queue_.reset(new boost::interprocess::message_queue(
 				boost::interprocess::open_or_create, qname_, 256, 8192
 			));
@@ -92,12 +94,21 @@ CLOSING:
 		return fpath_[0] == '/';
 	}
 	php::value logger::__construct(php::parameters& params) {
-		fpath_ = params[0].to_string();
+		if(params.size() > 0) {
+			fpath_ = params[0].to_string();
+		}
 		initialize();
 		if(controller_->type == controller::MASTER) {
 			// 主进程在 SIGUSR2 时重载日志(文件)
 			signal_.reset(new boost::asio::signal_set(context));
 			signal_->async_wait(std::bind(&logger::on_sigusr2, this, std::placeholders::_1, std::placeholders::_2));
+		}else {
+			if(logger_ != nullptr) {
+				// 通知主进程建立对应的对象
+				std::string f("n");
+				f += fpath_;
+				logger_->queue_->send(f.c_str(), f.size(), 0);
+			}
 		}
 		return nullptr;
 	}
