@@ -9,7 +9,7 @@ namespace log {
 	logger*    logger_ = nullptr;
 
 	static void write_before_exit(const std::exception& ex) {
-		boost::format fmt("(FAIL) Uncaught C++ Exception: %s");
+		boost::format fmt(" (FAIL) Uncaught C++ Exception: %s");
 		fmt % ex.what();
 		// C++ 代码异常需要额外进行输出
 		std::clog << "[" << time::datetime() << "] " << fmt.str() << std::endl;
@@ -19,7 +19,7 @@ namespace log {
 		}
 	}
 	static void write_before_exit(const php::exception& ex) {
-		boost::format fmt("(FAIL) Uncaught PHP Exception: %s");
+		boost::format fmt(" (FAIL) Uncaught PHP Exception: %s");
 		// PHP 异常可以获得更多的信息
 		php::object obj(ex);
 		php::string str = obj.call("__tostring");

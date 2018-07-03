@@ -10,16 +10,19 @@ flame\init("log_1", [
 	"logger" => $file,
 ]);
 flame\go(function() use($file) {
-	$data = "info logger (". rand() .")";
+	$data = "中文 info logger (". rand() .") 中文";
 	$expt = $data."\n";
 	flame\log\info($data);
 	foreach (file($file) as $line) {
 		assert( substr($line, -strlen($expt)) == $expt);
 	}
 	@unlink($file);
-	flame\log\rotate($data);
+	flame\log\rotate();
 	// 由于 rotate 通知日志线程执行, 文件不会立刻重新打开
 	yield flame\time\sleep(10);
+	flame\log\info($data);
+	flame\log\info($data);
+	flame\log\info($data);
 	flame\log\info($data);
 	foreach (file($file) as $line) {
 		assert( substr($line, -strlen($expt)) == $expt);

@@ -9,7 +9,7 @@ if(!getenv("FLAME_PROCESS_WORKER")) {
 flame\init("log_2");
 flame\go(function() use($file) {
 	$logger = new flame\log\logger($file);
-	$data = "info logger (". rand() .")";
+	$data = "中文 info logger (". rand() .") 中文";
 	$expt = $data."\n";
 	yield flame\time\sleep(10);
 	$logger->info($data);
@@ -19,9 +19,12 @@ flame\go(function() use($file) {
 		assert( substr($line, -strlen($expt)) == $expt);
 	}
 	@unlink($file);
-	$logger->rotate($data);
+	$logger->rotate();
 	// 由于 rotate 通知日志线程执行, 文件不会立刻重新打开
 	yield flame\time\sleep(10);
+	$logger->info($data);
+	$logger->info($data);
+	$logger->info($data);
 	$logger->info($data);
 	foreach (file($file) as $line) {
 		assert( substr($line, -strlen($expt)) == $expt);

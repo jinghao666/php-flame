@@ -104,6 +104,7 @@ namespace flame {
 	//
 	void coroutine::resume(php::value rv) {
 		assert(!rv.instanceof(zend_ce_throwable));
+		rv_.clear();
 		rv_.push_back(rv);
 		resume();
 	}
@@ -161,9 +162,10 @@ namespace flame {
 			rv_.push_back(nullptr);
 		}
 		while(rv_.front().instanceof(zend_ce_generator)) {
-			st_.push(std::make_pair(rv_[0], static_cast<zval*>(nullptr)));
-			php::value rv = php::object(rv_[0]).call("current");
+			php::object g = rv_[0];
 			rv_.clear();
+			st_.push(std::make_pair(g, static_cast<zval*>(nullptr)));
+			php::value rv = g.call("current");
 			rv_.push_back( rv );
 		}
 	}

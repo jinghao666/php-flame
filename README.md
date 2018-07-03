@@ -69,9 +69,9 @@ rm -f /data/vendor/amqp-3.1.0/lib/libamqpcpp.so*
 
 * [mongo-c-dirver](http://mongoc.org/libmongoc/current/index.html) - 仅保留静态库
 ```
-mkdir mongo-c-dirver-1.11.0-build
-cd mongo-c-dirver-1.11.0-build
-cmake -DCMAKE_INSTALL_PREFIX=/data/vendor/mongoc-1.11.0 -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_C_FLAGS=-fPIC -DENABLE_STATIC=ON ../mongo-c-driver-1.11.0
+mkdir mongo-c-driver-1.11.0-build
+cd mongo-c-driver-1.11.0-build
+cmake -DCMAKE_INSTALL_PREFIX=/data/vendor/mongoc-1.11.0 -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_C_FLAGS=-fPIC -DENABLE_STATIC=ON ../mongo-c-driver-1.11.0
 make -j4
 sudo make install
 rm -f /data/vendor/mongoc-1.11.0/lib/libbson-1.0.so*
