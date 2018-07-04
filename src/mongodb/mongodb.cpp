@@ -1,3 +1,4 @@
+#include "../controller.h"
 #include "../coroutine.h"
 #include "mongodb.h"
 #include "client.h"
@@ -10,6 +11,11 @@
 namespace flame {
 namespace mongodb {
 	void declare(php::extension_entry& ext) {
+		controller_->on_init([] (const php::array& opts) {
+			mongoc_init();
+		})->on_stop([] (std::exception_ptr ex) {
+			mongoc_cleanup();
+		});
 		ext
 			.function<connect>("flame\\mongodb\\connect");
 		client::declare(ext);
