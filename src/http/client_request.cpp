@@ -83,6 +83,7 @@ CTYPE_AGAIN:
 		}
 		if(body.empty()) return;
 		ctr_.body() = ctype_encode(ctype->value(), body);
+		ctr_.prepare_payload();
 	}
 }
 }

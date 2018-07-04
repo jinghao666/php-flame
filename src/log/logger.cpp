@@ -66,13 +66,15 @@ ROTATING:
 						goto CLOSING; // 退出停止机制
 					case 'r':
 						goto ROTATING; // 重载日志文件
-					default:
+					case ' ':
 						file->put('[');
 						file->write(time::datetime(), 19);
 						file->put(']');
 						file->write(data, size);
 						file->put('\n');
 						file->flush();
+					default:
+						;
 					}
 				}
 CLOSING:		
