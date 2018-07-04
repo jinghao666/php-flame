@@ -9,23 +9,14 @@ if(!getenv("FLAME_PROCESS_WORKER")) {
 flame\init("log_2");
 flame\go(function() use($file) {
 	$logger = new flame\log\logger($file);
-	$data = "中文 info logger (". rand() .") 中文";
-	$expt = $data."\n";
 	yield flame\time\sleep(10);
-	$logger->info($data);
+	$data = "中文";
+	$expt = "(INFO) 中文 rid: 12345 {\"a\":\"中文\"} aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\n";
+	$logger->info($data, "rid:", 12345, ["a"=>"中文"], "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+	$logger->info($data, "rid:", 12345, ["a"=>"中文"], "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+	$logger->info($data, "rid:", 12345, ["a"=>"中文"], "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
 	// 日志写入过程是异步的, 需要稍微等一会
 	yield flame\time\sleep(10);
-	foreach (file($file) as $line) {
-		assert( substr($line, -strlen($expt)) == $expt);
-	}
-	@unlink($file);
-	$logger->rotate();
-	// 由于 rotate 通知日志线程执行, 文件不会立刻重新打开
-	yield flame\time\sleep(10);
-	$logger->info($data);
-	$logger->info($data);
-	$logger->info($data);
-	$logger->info($data);
 	foreach (file($file) as $line) {
 		assert( substr($line, -strlen($expt)) == $expt);
 	}
