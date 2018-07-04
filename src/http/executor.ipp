@@ -14,20 +14,23 @@ namespace http {
     template <class Stream>
     void executor<Stream>::execute(const boost::system::error_code& error, std::size_t n) { BOOST_ASIO_CORO_REENTER(this) {
         co_ = flame::coroutine::current;
-        timer_.expires_after(std::chrono::milliseconds(static_cast<int>(req_->get("timeout"))));
-        timer_.async_wait(std::bind(&executor::timeout, this->shared_from_this(), std::placeholders::_1));
         // 构建并发送请求
         req_->build_ex();
         BOOST_ASIO_CORO_YIELD cli_->acquire(req_->url_, s_, std::bind(&executor::execute, this->shared_from_this(), std::placeholders::_1, 0));
         if(error == boost::asio::error::operation_aborted) {
             co_->fail("request timeout", boost::system::errc::stream_timeout);
+            return;
         }else if(error) {
             co_->fail(error);
             return;
         }
+        timer_.expires_after(std::chrono::milliseconds(static_cast<int>(req_->get("timeout"))));
+        timer_.async_wait(std::bind(&executor::timeout, this->shared_from_this(), std::placeholders::_1));
+
         BOOST_ASIO_CORO_YIELD boost::beast::http::async_write(*s_, req_->ctr_, std::bind(&executor::execute, this->shared_from_this(), std::placeholders::_1, std::placeholders::_2));
         if(error == boost::asio::error::operation_aborted) {
             co_->fail("request timeout", boost::system::errc::stream_timeout);
+            return;
         }else if(error) {
             co_->fail(error);
             return;
@@ -38,6 +41,7 @@ namespace http {
         BOOST_ASIO_CORO_YIELD boost::beast::http::async_read(*s_, cache_, res_->ctr_, std::bind(&executor::execute, this->shared_from_this(), std::placeholders::_1, std::placeholders::_2));
         if(error == boost::asio::error::operation_aborted) {
             co_->fail("request timeout", boost::system::errc::stream_timeout);
+            return;
         }else if(error) {
             co_->fail(error);
             return;

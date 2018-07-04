@@ -28,7 +28,7 @@ namespace flame {
 	coroutine::coroutine()
 	: status_(0)
 	, wk_(context.get_executor()) {
-		
+		std::clog << "(coroutine): " << this << std::endl;
 	}
 	coroutine::~coroutine() {
 		wk_.reset();
@@ -36,6 +36,7 @@ namespace flame {
 		// while(!st_.empty()) {
 		// 	st_.pop();
 		// }
+		std::clog << "~coroutine~: " << this << std::endl;
 	}
 	std::shared_ptr<coroutine> coroutine::stack(const php::callable& fn, const php::object& rf) {
 		st_.push(std::make_pair(fn, rf));
