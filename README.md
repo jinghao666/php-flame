@@ -71,7 +71,7 @@ rm -f /data/vendor/amqp-3.1.0/lib/libamqpcpp.so*
 ```
 mkdir mongo-c-driver-1.11.0-build
 cd mongo-c-driver-1.11.0-build
-cmake -DCMAKE_INSTALL_PREFIX=/data/vendor/mongoc-1.11.0 -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_C_FLAGS=-fPIC -DENABLE_STATIC=ON ../mongo-c-driver-1.11.0
+cmake -DCMAKE_INSTALL_PREFIX=/data/vendor/mongoc-1.11.0 -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_C_FLAGS=-fPIC -DENABLE_STATIC=ON -DENABLE_SHM_COUNTERS=OFF -DENABLE_TESTS=OFF -DENABLE_EXAMPLES=OFF -DENABLE_AUTOMATIC_INIT_AND_CLEANUP=OFF ../mongo-c-driver-1.11.0
 make -j4
 sudo make install
 rm -f /data/vendor/mongoc-1.11.0/lib/libbson-1.0.so*
