@@ -14,8 +14,8 @@ namespace mongodb {
 	_connection_pool::~_connection_pool() {
 		mongoc_client_pool_destroy(pool_);
 	}
-	_connection_pool& _connection_pool::exec(std::function<std::shared_ptr<bson_t> (std::shared_ptr<mongoc_client_t> c)> wk,
-		std::function<void (std::shared_ptr<mongoc_client_t> c, std::shared_ptr<bson_t> d)> fn) {
+	_connection_pool& _connection_pool::exec(std::function<std::shared_ptr<bson_t> (std::shared_ptr<mongoc_client_t> c, std::shared_ptr<bson_error_t> error)> wk,
+		std::function<void (std::shared_ptr<mongoc_client_t> c, std::shared_ptr<bson_t> d, std::shared_ptr<bson_error_t> error)> fn) {
 		auto ptr = this->shared_from_this();
 		// 工作线程
 		boost::asio::post(controller_->context_ex, [this, wk, fn, ptr] () {
@@ -25,11 +25,12 @@ namespace mongodb {
 					mongoc_client_pool_push(pool_, c);
 				});
 			});
+			std::shared_ptr<bson_error_t> error;
 			// 执行命令
-			std::shared_ptr<bson_t> r = wk(c);
+			std::shared_ptr<bson_t> r = wk(c, error);
 			// 后续流程 (回到主线程)
-			boost::asio::post(context, [this, fn, r, c, ptr] () {
-				fn(c, r);
+			boost::asio::post(context, [this, fn, r, c, error, ptr] () {
+				fn(c, r, error);
 			});
 		});
 		return *this;
