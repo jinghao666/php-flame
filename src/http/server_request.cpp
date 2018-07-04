@@ -59,6 +59,7 @@ namespace http {
 			if(key.size() == 6 && strncasecmp(key.c_str(), "cookie", 6) == 0) {
 				php::array cookie(4);
 				parser::separator_parser<std::string, php::buffer> p1('\0','\0','=','\0','\0',';', [&cookie] (std::pair<std::string, php::buffer> entry) {
+					entry.second.shrink( php::url_decode_inplace(entry.second.data(), entry.second.size()) );
 					cookie.set(entry.first, php::string(std::move(entry.second)));
 				});
 				p1.parse(val.c_str(), val.size());
