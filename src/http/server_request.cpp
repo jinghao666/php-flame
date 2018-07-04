@@ -56,6 +56,15 @@ namespace http {
 			php::string key {i->name_string().data(), i->name_string().size()};
 			php::string val {i->value().data(), i->value().size()};
 
+			if(key.size() == 6 && strncasecmp(key.c_str(), "cookie", 6) == 0) {
+				php::array cookie(4);
+				parser::separator_parser<std::string, php::buffer> p1('\0','\0','=','\0','\0',';', [&cookie] (std::pair<std::string, php::buffer> entry) {
+					cookie.set(entry.first, php::string(std::move(entry.second)));
+				});
+				p1.parse(val.c_str(), val.size());
+				p1.parse(";", 1); // 结尾分隔符可能不存在(可以认为数据行可能不完整)
+				set("cookie", cookie);
+			}
 			// TODO 多个同名 HEADER 的处理
 			php::lowercase_inplace(key.data(), key.size());
 			header.set(key, val);
