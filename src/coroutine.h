@@ -36,7 +36,8 @@ namespace flame {
 		
 		// 协程运行过程
 		void start_ex();
-		void resume_ex();
+		void run_ex();
+		void run();
 		void tune_ex(php::object& g, php::exception& ex);
 
 		friend class controller;

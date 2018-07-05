@@ -2,11 +2,13 @@
 #include "../coroutine.h"
 #include "mongodb.h"
 #include "client.h"
+#include "_connection_base.h"
 #include "_connection_pool.h"
 #include "_connection_lock.h"
 #include "cursor.h"
 #include "object_id.h"
 #include "date_time.h"
+#include "collection.h"
 
 namespace flame {
 namespace mongodb {
@@ -22,6 +24,7 @@ namespace mongodb {
 		cursor::declare(ext);
 		object_id::declare(ext);
 		date_time::declare(ext);
+		collection::declare(ext);
 	}
 	php::value connect(php::parameters& params) {
 		php::object cli(php::class_entry<client>::entry());
@@ -152,6 +155,9 @@ namespace mongodb {
 			}
 		}
 		return std::shared_ptr<bson_t>(doc, bson_destroy);
+	}
+	void null_deleter(bson_t* doc) {
+		
 	}
 }
 }

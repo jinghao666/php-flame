@@ -103,7 +103,11 @@ namespace flame {
 		}
 	}
 	void controller::worker_run() {
-		boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work(context_ex.get_executor());
+		// boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work(context_ex.get_executor());
+		boost::asio::signal_set s(context_ex, SIGINT, SIGTERM);
+		s.async_wait([this] (const boost::system::error_code& error, int sig) {
+			context.stop();
+		});
 		// 辅助工作线程
 		std::thread workers[4];
 		for(int i=0;i<4;++i) {
@@ -121,7 +125,7 @@ namespace flame {
 		for(auto fn: stop_) {
 			fn(ex);
 		}
-		work.reset();
+		s.cancel();
 		// context_ex.stop();
 		for(int i=0;i<4;++i) {
 			if(workers[i].joinable()) {

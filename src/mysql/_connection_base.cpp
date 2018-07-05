@@ -1,8 +1,10 @@
+#include "../coroutine.h"
 #include "_connection_base.h"
+#include "result.h"
 
 namespace flame {
 namespace mysql {
-	void _connection_base::escape(php::buffer& b, php::value v) {
+	void _connection_base::escape(php::buffer& b, const php::value& v, char quote) {
 		switch(Z_TYPE_P(static_cast<zval*>(v))) {
 		case IS_NULL:
 			std::memcpy(b.prepare(4), "NULL", 4);
@@ -27,13 +29,13 @@ namespace mysql {
 			php::string str = v;
 			char* to = b.prepare(str.size() * 2 + 2);
 			std::size_t n = 0;
-			to[n++] = '\'';
+			to[n++] = quote;
 			if(s_ & SERVER_STATUS_NO_BACKSLASH_ESCAPES) { // 摘自 mysql_real_escape_string_quote() @ libmysql.c:1228 相关流程
-				n += escape_quotes_for_mysql(i_, to + 1, str.size() * 2 + 1, str.c_str(), str.size(), '\'');
+				n += escape_quotes_for_mysql(i_, to + 1, str.size() * 2 + 1, str.c_str(), str.size(), quote);
 			}else{
 				n += escape_string_for_mysql(i_, to + 1, str.size() * 2 + 1, str.c_str(), str.size());
 			}
-			to[n++] = '\'';
+			to[n++] = quote;
 			b.commit(n);
 			break;
 		}
@@ -43,7 +45,7 @@ namespace mysql {
 			b.push_back('(');
 			for(auto i=arr.begin();i!=arr.end();++i) {
 				if(++index > 1) b.push_back(',');
-				escape(b, i->second);
+				escape(b, i->second, quote);
 			}
 			b.push_back(')');
 			break;
@@ -51,9 +53,35 @@ namespace mysql {
 		default: {
 			php::string str = v;
 			str.to_string();
-			escape(b, str);
+			escape(b, str, quote);
 		}
 		}
+	}
+	void _connection_base::query(std::shared_ptr<coroutine> co, const php::object& ref, const php::string& sql) {
+		exec([sql] (std::shared_ptr<MYSQL> c, int& error) -> std::shared_ptr<MYSQL_RES> { // 工作线程
+			MYSQL* conn = c.get();
+			error = mysql_real_query(conn, sql.c_str(), sql.size());
+			if(error != 0) return nullptr;
+			MYSQL_RES* r = mysql_store_result(conn); // 为了防止长时间锁表, 与 PHP 内部实现一致使用 store 二非 use
+			if(!r && (error = mysql_field_count(conn)) != 0) return nullptr; // 应该但未返回 RESULT_SET
+			return std::shared_ptr<MYSQL_RES>(r, mysql_free_result);
+		}, [co, sql, ref] (std::shared_ptr<MYSQL> c, std::shared_ptr<MYSQL_RES> r, int error) { // 主线程 (需要继续捕捉 sql 保证其释放动作在主线程进行)
+			MYSQL* conn = c.get();
+			if(error) { // 错误
+				co->fail(mysql_error(conn), mysql_errno(conn));
+			}else{ 
+				php::object rs(php::class_entry<result>::entry());
+				if(r) { // 查询型返回
+					rs.set("found_rows", static_cast<std::int64_t>(mysql_affected_rows(conn)));
+					result* rs_ = static_cast<result*>(php::native(rs));
+					rs_->r_ = r;
+				}else{ // 更新型返回
+					rs.set("affected_rows", static_cast<std::int64_t>(mysql_affected_rows(conn)));
+					rs.set("insert_id", static_cast<std::int64_t>(mysql_insert_id(conn)));
+				}
+				co->resume(rs);
+			}
+		});
 	}
 }
 }

@@ -1,5 +1,6 @@
 #include "../coroutine.h"
 #include "cursor.h"
+#include "_connection_base.h"
 #include "_connection_lock.h"
 #include "mongodb.h"
 
@@ -27,7 +28,7 @@ namespace mongodb {
 					delete err;
 				}
 			}
-			return std::shared_ptr<bson_t>(const_cast<bson_t*>(doc), boost::null_deleter());
+			return std::shared_ptr<bson_t>(const_cast<bson_t*>(doc), null_deleter);
 		}, [this, co, ref] (std::shared_ptr<mongoc_client_t> c, std::shared_ptr<bson_t> b, std::shared_ptr<bson_error_t> error) {
 			if(error) {
 				co->fail(error->message, error->code);

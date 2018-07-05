@@ -2,7 +2,7 @@
 
 namespace flame {
 namespace mysql {
-	class _connection_base;
+	class _connection_lock;
 	class transaction: public php::class_base {
 	public:
 		static void declare(php::extension_entry& ext);
@@ -16,7 +16,8 @@ namespace mysql {
 		php::value query(php::parameters& params);
 		// TODO 提供类似 medoo 的辅助简化接口
 	protected:
-		std::shared_ptr<_connection_base> c_;
+		std::shared_ptr<_connection_lock> c_;
+		void query(std::shared_ptr<coroutine> co, const php::string& sql);
 		friend class client;
 	};
 }

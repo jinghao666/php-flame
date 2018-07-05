@@ -19,17 +19,18 @@ namespace mysql {
 		}
 	}
 	// 以下函数应在主线程调用
-	_connection_pool& _connection_pool::exec(std::function<MYSQL_RES* (std::shared_ptr<MYSQL> c)> wk,
-			std::function<void (std::shared_ptr<MYSQL> c, MYSQL_RES* r)> fn) {
+	_connection_pool& _connection_pool::exec(std::function<std::shared_ptr<MYSQL_RES> (std::shared_ptr<MYSQL> c, int& error)> wk,
+			std::function<void (std::shared_ptr<MYSQL> c, std::shared_ptr<MYSQL_RES> r, int error)> fn) {
 		auto ptr = this->shared_from_this();
 		// 受保护的连接获取过程
 		boost::asio::post(wait_guard, std::bind(&_connection_pool::acquire, this, [wk, fn, ptr] (std::shared_ptr<MYSQL> c) {
 			// 不受保护的工作过程
 			boost::asio::post(controller_->context_ex, [wk, fn, c, ptr] () {
-				MYSQL_RES* r = wk(c);
-				boost::asio::post(context, [fn, c, r, ptr] () {
+				int error = 0;
+				std::shared_ptr<MYSQL_RES> r = wk(c, error);
+				boost::asio::post(context, [fn, c, r, error, ptr] () {
 					// 主线程后续流程
-					fn(c, r);
+					fn(c, r, error);
 				});
 			});
 		}));
@@ -41,9 +42,11 @@ namespace mysql {
 		while(!conn_.empty()) {
 			if(mysql_ping(conn_.front()) == 0) { // 找到了一个可用连接
 				release(conn_.front());
-			}else{ // 已丢失的连接抛弃
 				conn_.pop_front();
+				return;
+			}else{ // 已丢失的连接抛弃
 				--size_;
+				conn_.pop_front();
 			}
 		}
 		if(size_ >= max_) return; // 已建立了足够多的连接, 需要等待

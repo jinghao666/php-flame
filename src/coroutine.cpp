@@ -60,10 +60,10 @@ namespace flame {
 	// 继续运行
 	void coroutine::start_ex() {
 		boost::asio::post(context, std::bind(
-			static_cast<void (coroutine::*)()>(&coroutine::resume), shared_from_this()));
+			static_cast<void (coroutine::*)()>(&coroutine::run), shared_from_this()));
 	}
 	// 恢复协程并处理可能的异常
-	void coroutine::resume() {
+	void coroutine::run() {
 		if(st_.empty()) {
 			if(status_ != 0) {
 				throw php::exception(zend_ce_exception, "keyword 'yield' missing (last)");
@@ -72,7 +72,7 @@ namespace flame {
 		}
 		switcher s(this);
 		try{
-			resume_ex();
+			run_ex();
 		}catch(const php::exception& ex) {
 			if(!st_.empty()) {
 				// 调用过程异常, 抛弃最上层
@@ -102,15 +102,19 @@ namespace flame {
 		}
 	}
 	//
+	void coroutine::resume() {
+		rv_.clear();
+		start_ex();
+	}
 	void coroutine::resume(php::value rv) {
 		assert(!rv.instanceof(zend_ce_throwable));
 		rv_.clear();
 		rv_.push_back(rv);
-		resume();
+		start_ex();
 	}
 	void coroutine::resume(std::vector<php::value> rv) {
 		rv_.swap(rv);
-		resume();
+		start_ex();
 	}
 	void coroutine::fail(const php::string& msg, int code) {
 		rv_.clear();
@@ -120,12 +124,12 @@ namespace flame {
 			php::exception ex(zend_ce_exception, msg, code);
 			rv_.push_back(ex);
 		}
-		resume();
+		start_ex();
 	}
 	void coroutine::fail(const boost::system::error_code& error) {
 		fail(error.message(), error.value());
 	}
-	void coroutine::resume_ex() {
+	void coroutine::run_ex() {
 		auto top = st_.top();
 		std::vector<php::value> rv {std::move(rv_)};
 		if (top.first.instanceof(zend_ce_generator)) {

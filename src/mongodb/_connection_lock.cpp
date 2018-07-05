@@ -1,5 +1,6 @@
 #include "../controller.h"
 #include "../coroutine.h"
+#include "_connection_base.h"
 #include "_connection_lock.h"
 
 namespace flame {

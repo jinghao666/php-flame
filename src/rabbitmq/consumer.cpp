@@ -30,7 +30,7 @@ namespace rabbitmq {
 	php::value consumer::run(php::parameters& params) {
 		cb_ = params[0];
 		co_parent = coroutine::current;
-		// co_parent->stack(nullptr, php::value(this));
+		co_parent->stack(nullptr, php::value(this));
 		std::string queue = get("queue");
 		amqp_.channel->consume(queue, flag_)
 			// onReceived 等回调不能捕获 php::value(this) 否则会导致该引用被长时间持有

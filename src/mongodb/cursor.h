@@ -14,8 +14,7 @@ namespace mongodb {
 	private:
 		std::shared_ptr<_connection_lock> p_;
 		std::shared_ptr<mongoc_cursor_t>  c_;
-		friend php::value connect(php::parameters& params);
-		friend class client;
+		friend class _connection_base;
 	};
 }
 }

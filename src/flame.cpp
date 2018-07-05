@@ -22,7 +22,8 @@ extern "C" {
 			.desc({"vendor/boost", BOOST_LIB_VERSION})
 			.desc({"vendor/libphpext", PHPEXT_LIB_VERSION})
 			.desc({"vendor/amqp-cpp", "3.1.0"})
-			.desc({"vendor/mysql", PACKAGE_VERSION});
+			.desc({"vendor/mysqlc", PACKAGE_VERSION})
+			.desc({"vendor/mongoc", MONGOC_VERSION_S});
 
 		flame::declare(ext);
 		flame::os::declare(ext);
