@@ -74,7 +74,7 @@ namespace redis {
 		while(!qr_.empty()) {
 			// 接受队头元素所有数据
 			while(qr_.front()->rv_.size() > 1 || qr_.front()->rv_.top().size > 0) {
-				BOOST_ASIO_CORO_YIELD boost::asio::async_read_until<tcp::socket, dynamic_buffer>(socket_, dynamic_buffer(rbuffer_), "\r\n", std::bind(&_client::read_ex, this->shared_from_this(), std::placeholders::_1, std::placeholders::_2));
+				BOOST_ASIO_CORO_YIELD boost::asio::async_read_until<tcp::socket, dynamic_buffer>(socket_, rbuffer_, "\r\n", std::bind(&_client::read_ex, this->shared_from_this(), std::placeholders::_1, std::placeholders::_2));
 				if(error) {
 					qr_.front()->co_->fail(error);
 					return;

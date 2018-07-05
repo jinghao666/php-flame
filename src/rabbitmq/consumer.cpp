@@ -29,8 +29,8 @@ namespace rabbitmq {
 	}
 	php::value consumer::run(php::parameters& params) {
 		cb_ = params[0];
-		co_parent = coroutine::current;
-		co_parent->stack(nullptr, php::value(this));
+		co_ = coroutine::current;
+		co_->stack(nullptr, php::value(this));
 		std::string queue = get("queue");
 		amqp_.channel->consume(queue, flag_)
 			// onReceived 等回调不能捕获 php::value(this) 否则会导致该引用被长时间持有
@@ -38,12 +38,11 @@ namespace rabbitmq {
 				php::object msg(php::class_entry<message>::entry());
 				message* msg_ = static_cast<message*>(php::native(msg));
 				msg_->build_ex(m, tag);
-				co_worker->start(cb_, {msg});
+				std::make_shared<coroutine>()->start(cb_, {msg});
 			}).onSuccess([this] (const std::string& tag) {
-				co_worker.reset(new coroutine());
 				set("tag", tag);
 			}).onError([this] (const char* message) {
-				co_parent->fail(message);
+				co_->fail(message);
 			});
 		return coroutine::async();
 	}
@@ -65,12 +64,11 @@ namespace rabbitmq {
 			std::shared_ptr<coroutine> co = coroutine::current;
 			co->stack(nullptr, php::value(this)); // 保存当前对象引用
 			amqp_.channel->cancel(tag).onSuccess([this, co] (const std::string& tag) mutable {
-				co_parent->resume();
+				co_->resume();
 				co->resume();
 				co.reset();
-				co_parent.reset();
+				co_.reset();
 				cb_ = nullptr;
-				co_worker.reset();
 			});
 			return coroutine::async();
 		}else{

@@ -15,8 +15,7 @@ namespace rabbitmq {
 		context_type amqp_;
 		int          flag_;
 		php::callable  cb_;
-		std::shared_ptr<coroutine> co_parent;
-		std::shared_ptr<coroutine> co_worker;
+		std::shared_ptr<coroutine> co_;
 		friend class client;
 	};
 }
